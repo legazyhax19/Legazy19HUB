@@ -1,1 +1,1 @@
-loadstring(game:HttpGet('https://raw.githubusercontent.com/legazyhax19/Split-The-Sea/refs/heads/main/Script'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/legazyhax19/GameScript/refs/heads/main/library'))()
