@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 -- [[ 🔗 James: URL Webhook ของนาย ]]
-local WebhookURL = "https://discord.com/api/webhooks/1490601976210133112/VkWEZ-_wrJOhn_rn1hXUs0UWf5-Nde6g-W4ovI7VWWzXnRYkzTbEM5ur_XeDwa4vGAOQ" 
+local WebhookURL = "https://discord.com/api/webhooks/1490623401478590605/ddvY90-tTv4bPdnokOo_RgLD9nX_Mvm5ar2xE6l6n1VcYL6c0oYkoKP5cWN_WhFJAJPw" 
 
 -- [[ 🆔 ID เกมหลักที่ James ต้องการให้เชื่อมโยงกับ Biome (เฉพาะตอนรันด่านย่อย) ]]
 local ParentGameId = 16488030559
