@@ -2,59 +2,108 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 
--- [[ 🔗 CONFIG: Webhook URL (อยู่ใน Main Script ตามที่เจมส์ต้องการ) ]]
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1490623401478590605/ddvY90-tTv4bPdnokOo_RgLD9nX_Mvm5ar2xE6l6n1VcYL6c0oYkoKP5cWN_WhFJAJPw"
+-- [[ 🔗 James: URL Webhook ของนาย ]]
+local WebhookURL = "https://discord.com/api/webhooks/1490601976210133112/VkWEZ-_wrJOhn_rn1hXUs0UWf5-Nde6g-W4ovI7VWWzXnRYkzTbEM5ur_XeDwa4vGAOQ" 
 
-local function SendTracking()
-    local player = Players.LocalPlayer
+-- [[ 🆔 ID เกมหลักที่ James ต้องการให้เชื่อมโยงกับ Biome (เฉพาะตอนรันด่านย่อย) ]]
+local ParentGameId = 16488030559
+
+-- [[ 🗺️ James's Biome Mapping: ถ้า PlaceId ตรงกับในลิสต์ จะใช้ชื่อพิเศษนี้ ]]
+local MapNames = {
+    [102455722994926] = "Desert (Shadizar)",
+    [71212605984841]  = "Swamp (Darfar)",
+    [79460847610638]  = "Canyon (Khorshemish)",
+    [137335597011588] = "Highlands (Gunderland)",
+    [100046373266007] = "Underground (Xuthltan)",
+}
+
+local function SendWebhook()
     local placeId = game.PlaceId
-    local gameName = "Protect the King"
+    local playerCount = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers
     
-    -- พยายามดึงชื่อเกมจริงจากระบบ
-    pcall(function()
-        local info = MarketplaceService:GetProductInfo(placeId)
-        if info then gameName = info.Name end
-    end)
+    local rootGameName = "Unknown Game" 
+    local currentMapName = "" -- เริ่มต้นเป็นค่าว่างไว้ก่อน
+
+    -- [[ 🔄 UNIVERSAL LOGIC: รองรับทุกเกม ]]
+    if MapNames[placeId] then
+        -- 1. กรณีอยู่ในแมพที่ James กำหนดไว้ (Biome เฉพาะ)
+        currentMapName = MapNames[placeId]
+        
+        local successRoot, rootInfo = pcall(function()
+            return MarketplaceService:GetProductInfo(ParentGameId)
+        end)
+        
+        if successRoot and rootInfo then
+            rootGameName = rootInfo.Name
+        else
+            rootGameName = "Protect the King" 
+        end
+    else
+        -- 2. กรณีรันเกมอื่นๆ (Auto Detect)
+        local successAuto, autoInfo = pcall(function()
+            return MarketplaceService:GetProductInfo(placeId) 
+        end)
+        
+        if successAuto and autoInfo then
+            rootGameName = autoInfo.Name
+            -- ถ้าเป็นเกมทั่วไป เราจะไม่ตั้ง currentMapName เพื่อให้ Logic ข้างล่างซ่อนบรรทัด Biome
+            currentMapName = "" 
+        end
+    end
+
+    -- [[ 🛠️ Logic การแสดงผลรายละเอียดเกม ]]
+    local gameDetails = "> **Main Game:** " .. rootGameName
     
-    -- สร้าง Embed ที่สวยงามและเน้น JobID ให้ก๊อปปี้ง่าย
-    local embed = {
-        ["title"] = "🛠️ **Legazy19HUB - Active Session**",
-        ["description"] = "──────────────────────────",
-        ["color"] = 2829617,
-        ["fields"] = {
-            {
-                ["name"] = "👤 **USER INFO**",
-                ["value"] = "> **Name:** " .. player.Name .. "\n> **ID:** " .. tostring(player.UserId),
-                ["inline"] = false
-            },
-            {
-                ["name"] = "🎮 **GAME INFO**",
-                ["value"] = "> **Game Name:** " .. gameName .. "\n> **Place ID:** [" .. tostring(placeId) .. "](https://www.roblox.com/games/" .. placeId .. ")",
-                ["inline"] = false
-            },
-            {
-                ["name"] = "🏢 **SERVER JOB ID (COPY BELOW)**",
-                ["value"] = "```" .. tostring(game.JobId) .. "```", -- ใส่กล่อง Code ให้เด่นที่สุดเพื่อให้ James ก๊อปง่าย
-                ["inline"] = false
-            },
-            {
-                ["name"] = "​", -- เว้นบรรทัด
-                ["value"] = "LOGGED AT: " .. os.date("%d/%m/%Y | %X") .. "\n──────────────────────────",
-                ["inline"] = false
+    -- ถ้ามีชื่อ Biome (และชื่อไม่ซ้ำกับชื่อเกมหลัก) ถึงจะแสดงบรรทัด Biome
+    if currentMapName ~= "" and currentMapName ~= rootGameName then
+        gameDetails = gameDetails .. "\n> **Biome:** " .. currentMapName
+    end
+    
+    gameDetails = gameDetails .. "\n> **Place ID:** [" .. tostring(placeId) .. "](https://www.roblox.com/games/" .. placeId .. ")"
+
+    local data = {
+        ["embeds"] = {{
+            ["title"] = "🛠️ **Scanner Script Activity**",
+            ["description"] = "──────────────────────────",
+            ["color"] = 2829617,
+            ["fields"] = {
+                {
+                    ["name"] = "👤 **USER INFORMATION**",
+                    ["value"] = "> **Name:** " .. Players.LocalPlayer.Name .. "\n> **ID:** " .. tostring(Players.LocalPlayer.UserId),
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "🎮 **GAME DETAILS**",
+                    ["value"] = gameDetails,
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "🏢 **SERVER DETAILS**",
+                    ["value"] = "> **Job ID:**\n```" .. tostring(game.JobId) .. "```",
+                    ["inline"] = false
+                },
+                {
+                    ["name"] = "👥 **POPULATION**",
+                    ["value"] = "> **Players:** " .. playerCount .. " / " .. maxPlayers,
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "​", 
+                    ["value"] = "TIME • " .. os.date("%d/%m/%Y | %X") .. "\n──────────────────────────",
+                    ["inline"] = false
+                }
             }
-        },
-        ["footer"] = {
-            ["text"] = "Legazy19HUB Logging System • James CS KPRU"
-        }
+        }}
     }
     
-    local payload = HttpService:JSONEncode({["embeds"] = {embed}})
-    local req = (request or http_request or (http and http.request) or (syn and syn.request))
+    local payload = HttpService:JSONEncode(data)
+    local request_func = (request or http_request or (http and http.request) or (syn and syn.request))
     
-    if req then
+    if request_func then
         pcall(function()
-            req({
-                Url = WEBHOOK_URL,
+            request_func({
+                Url = WebhookURL,
                 Method = "POST",
                 Headers = {["Content-Type"] = "application/json"},
                 Body = payload
@@ -62,14 +111,10 @@ local function SendTracking()
         end)
     else
         pcall(function()
-            HttpService:PostAsync(WEBHOOK_URL, payload)
+            HttpService:PostAsync(WebhookURL, payload)
         end)
     end
 end
 
--- ส่งข้อมูลเข้า Discord ทันทีเมื่อสคริปต์หลักเริ่มทำงาน
-task.spawn(SendTracking)
-
--- [[ ⚔️ MAIN CODE: ใส่สูตรโกงของเจมส์ต่อด้านล่างนี้ได้เลย ]]
-print("--- Legazy19HUB: Protect the King Loaded! ---")
--- ตัวอย่าง: loadstring(game:HttpGet("..."))()
+-- รันแยก Task เพื่อความรวดเร็ว
+task.spawn(SendWebhook)
